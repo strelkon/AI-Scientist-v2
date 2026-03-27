@@ -1,14 +1,15 @@
 ---
 name: ai-scientist
-description: Run the full AI Scientist v2 pipeline — ideation through review. Only the experiment stage requires API keys.
+description: Run the full AI Scientist v2 pipeline — autonomous scientific research from ideation through review. No external API keys required (uses Claude Code natively).
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <ideas-json-or-topic-md> [--idea_idx N] [--writeup-type normal|icbinb] [--skip_writeup] [--skip_review] [--skip_experiments]
+effort: max
 ---
 
-# AI Scientist v2 — Full Pipeline
+# AI Scientist v2 — Full Pipeline (Claude Code Native)
 
-Orchestrate the complete AI Scientist v2 research pipeline. Stages that previously required API keys (ideation, writeup, review) now run natively in Claude Code. Only the experiment stage still requires external API keys.
+Orchestrate the complete AI Scientist v2 research pipeline. **All stages run natively in Claude Code — no external API keys required** (only `S2_API_KEY` for Semantic Scholar is recommended).
 
 ## Arguments
 
@@ -26,43 +27,55 @@ Parse `$ARGUMENTS`:
 - `--skip_review`: Skip peer review
 - `--max-num-generations N`: Ideas to generate if running ideation (default: 5)
 
+## Environment Check
+
+Before starting, verify:
+```bash
+# Check for Semantic Scholar key (recommended for ideation & writeup)
+echo "S2_API_KEY: ${S2_API_KEY:+set}"
+
+# Check GPU availability (needed for experiments)
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, GPUs: {torch.cuda.device_count()}')" 2>/dev/null || echo "PyTorch not available"
+
+# Check LaTeX (needed for writeup)
+which pdflatex 2>/dev/null && echo "pdflatex: available" || echo "pdflatex: not found (needed for writeup)"
+```
+
+If `S2_API_KEY` is not set, inform the user that literature search will use WebSearch as fallback.
+
 ## Pipeline Stages
 
-### Stage 1: Ideation (Claude Code Native — No API Keys)
+### Stage 1: Ideation (Claude Code Native)
 
 **Only runs if a `.md` file is provided instead of `.json`.**
 
-Invoke the `/ai-scientist-ideate` skill with the topic file. This uses Claude Code's own capabilities and web search for literature review.
+Invoke the `/ai-scientist-ideate` skill with the topic file. This generates structured research ideas using Claude Code's capabilities and Semantic Scholar for literature search.
 
-After ideation, the JSON file path becomes the input for subsequent stages.
+After ideation completes, the JSON file path becomes input for subsequent stages.
 
-### Stage 2: Experiments (Requires API Keys)
+### Stage 2: Experiments (Claude Code Native)
 
 **Skipped if `--skip_experiments` is set.**
 
-Invoke the `/ai-scientist-experiment` skill. This is the only stage that requires external API keys because it runs parallel LLM-driven code generation via the BFTS engine.
+Invoke the `/ai-scientist-experiment` skill. Claude Code acts as both the code generator and analyzer, running the full 4-stage experiment process:
+1. Initial implementation
+2. Hyperparameter tuning
+3. Creative research improvements
+4. Ablation studies
 
-Before running, verify API keys are set:
-```bash
-echo "OPENAI_API_KEY: ${OPENAI_API_KEY:+set}"
-echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:+set}"
-```
+This stage generates code, executes it, analyzes results, views plots, and iterates — all within Claude Code.
 
-If keys are missing, warn the user and ask whether to skip experiments or stop.
-
-Wait for experiments to complete before proceeding.
-
-### Stage 3: Paper Writeup (Claude Code Native — No API Keys)
+### Stage 3: Paper Writeup (Claude Code Native)
 
 **Skipped if `--skip_writeup` is set.**
 
 Invoke the `/ai-scientist-writeup` skill. Claude Code will:
 1. Read all experiment results and summaries
-2. Search the web for relevant citations
+2. Search Semantic Scholar for relevant citations
 3. Generate a complete LaTeX paper
 4. Compile to PDF
 
-### Stage 4: Peer Review (Claude Code Native — No API Keys)
+### Stage 4: Peer Review (Claude Code Native)
 
 **Skipped if `--skip_review` or `--skip_writeup` is set.**
 
@@ -76,7 +89,7 @@ Invoke the `/ai-scientist-review` skill. Claude Code will:
 
 After the pipeline completes, report:
 1. Number of ideas generated (if ideation ran)
-2. Experiment results directory
+2. Experiment results directory and key metrics per stage
 3. Paper PDF path (if writeup ran)
 4. Review scores and decision (if review ran)
 5. Total pipeline status
