@@ -1,83 +1,100 @@
 ---
 name: ai-scientist
-description: Run the full AI Scientist v2 pipeline — autonomous scientific research from idea generation through experiments, paper writing, and review
+description: Run the full AI Scientist v2 pipeline — ideation through review. Only the experiment stage requires API keys.
 disable-model-invocation: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
-argument-hint: <ideas-json-path> [--idea_idx N] [--writeup-type normal|icbinb] [--skip_writeup] [--skip_review]
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
+argument-hint: <ideas-json-or-topic-md> [--idea_idx N] [--writeup-type normal|icbinb] [--skip_writeup] [--skip_review] [--skip_experiments]
 ---
 
 # AI Scientist v2 — Full Pipeline
 
-You are orchestrating the AI Scientist v2 autonomous research system. This skill runs the complete pipeline: experiments → plot aggregation → citation gathering → paper writeup → peer review.
+Orchestrate the complete AI Scientist v2 research pipeline. Stages that previously required API keys (ideation, writeup, review) now run natively in Claude Code. Only the experiment stage still requires external API keys.
 
-## Prerequisites
+## Arguments
 
-Before running, verify the environment:
+Parse `$ARGUMENTS`:
 
-1. **API keys** — At least one must be set:
-   - `OPENAI_API_KEY` for OpenAI models
-   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `AWS_REGION_NAME` for Bedrock
-   - `S2_API_KEY` for Semantic Scholar (optional but recommended)
-
-2. **System dependencies** — Verify these are installed:
-   - `pdflatex` and `bibtex` (LaTeX compilation)
-   - `chktex` (LaTeX checking)
-   - Python with CUDA-enabled PyTorch
-   - Project Python dependencies (`pip install -r requirements.txt`)
-
-3. **Ideas file** — A JSON file with pregenerated research ideas (from `/ai-scientist-ideate`)
-
-## Usage
-
-The user provides arguments via `$ARGUMENTS`. Parse them as follows:
-
-- **Positional arg 1** (`$0`): Path to ideas JSON file (required)
-- `--idea_idx N`: Which idea to run (default: 0)
-- `--writeup-type normal|icbinb`: Paper format — 8-page (normal) or 4-page ICBINB (default: icbinb)
+- **Positional arg 1**: Path to either:
+  - A `.json` file with pregenerated ideas (skips ideation)
+  - A `.md` topic file (runs ideation first)
+- `--idea_idx N`: Which idea to run experiments on (default: 0)
+- `--writeup-type TYPE`: `icbinb` (4-page, default) or `normal` (8-page)
+- `--load_code`: Load companion .py starter code
+- `--add_dataset_ref`: Add HuggingFace dataset reference
+- `--skip_experiments`: Skip experiment execution (use existing results)
 - `--skip_writeup`: Skip paper generation
 - `--skip_review`: Skip peer review
-- `--model_writeup MODEL`: Model for writeup (default: o1-preview-2024-09-12)
-- `--model_citation MODEL`: Model for citations (default: gpt-4o-2024-11-20)
-- `--model_review MODEL`: Model for review (default: gpt-4o-2024-11-20)
-- `--model_agg_plots MODEL`: Model for plot aggregation (default: o3-mini-2025-01-31)
-- `--num_cite_rounds N`: Citation rounds (default: 20)
-- `--load_code`: Load companion .py file for the ideas
-- `--add_dataset_ref`: Add HuggingFace dataset reference
+- `--max-num-generations N`: Ideas to generate if running ideation (default: 5)
 
-## Execution
+## Pipeline Stages
 
-Run the pipeline from the project root directory:
+### Stage 1: Ideation (Claude Code Native — No API Keys)
 
+**Only runs if a `.md` file is provided instead of `.json`.**
+
+Invoke the `/ai-scientist-ideate` skill with the topic file. This uses Claude Code's own capabilities and web search for literature review.
+
+After ideation, the JSON file path becomes the input for subsequent stages.
+
+### Stage 2: Experiments (Requires API Keys)
+
+**Skipped if `--skip_experiments` is set.**
+
+Invoke the `/ai-scientist-experiment` skill. This is the only stage that requires external API keys because it runs parallel LLM-driven code generation via the BFTS engine.
+
+Before running, verify API keys are set:
 ```bash
-cd /home/user/AI-Scientist-v2
-
-export AI_SCIENTIST_ROOT=/home/user/AI-Scientist-v2
-
-python launch_scientist_bfts.py \
-  --load_ideas "$0" \
-  [pass through all other flags from $ARGUMENTS]
+echo "OPENAI_API_KEY: ${OPENAI_API_KEY:+set}"
+echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:+set}"
 ```
 
-**Important notes:**
-- This is a **long-running process** (typically several hours). Run it in the background using `run_in_background: true` on the Bash tool.
-- Monitor progress by tailing log files in the `experiments/` directory.
-- The process uses significant GPU resources.
+If keys are missing, warn the user and ask whether to skip experiments or stop.
 
-## Output
+Wait for experiments to complete before proceeding.
 
-Results are saved to `experiments/{timestamp}_{idea_name}_attempt_{id}/` containing:
-- `idea.md` / `idea.json` — The research idea
-- `logs/` — Experiment logs and tree visualization
-- `figures/` — Publication-ready plots
-- `*.pdf` — Generated paper (if writeup enabled)
-- `review_text.txt` — LLM review (if review enabled)
-- `review_img_cap_ref.json` — Figure review (if review enabled)
-- `token_tracker.json` — API cost tracking
+### Stage 3: Paper Writeup (Claude Code Native — No API Keys)
 
-After the run completes, report the output directory and key results to the user.
+**Skipped if `--skip_writeup` is set.**
 
-## Error Handling
+Invoke the `/ai-scientist-writeup` skill. Claude Code will:
+1. Read all experiment results and summaries
+2. Search the web for relevant citations
+3. Generate a complete LaTeX paper
+4. Compile to PDF
 
-- If the process fails, check logs in `experiments/*/logs/` for details.
-- Common issues: missing API keys, CUDA out of memory, LaTeX compilation failures.
-- The writeup step retries up to 3 times automatically.
+### Stage 4: Peer Review (Claude Code Native — No API Keys)
+
+**Skipped if `--skip_review` or `--skip_writeup` is set.**
+
+Invoke the `/ai-scientist-review` skill. Claude Code will:
+1. Read the generated PDF
+2. Perform structured peer review (NeurIPS format)
+3. Review figures and captions
+4. Save review results
+
+## Output Summary
+
+After the pipeline completes, report:
+1. Number of ideas generated (if ideation ran)
+2. Experiment results directory
+3. Paper PDF path (if writeup ran)
+4. Review scores and decision (if review ran)
+5. Total pipeline status
+
+## Pipeline Flexibility
+
+The pipeline is modular — users can run any combination:
+
+```
+# Full pipeline from topic
+/ai-scientist my_topic.md
+
+# Ideas exist, run everything
+/ai-scientist ideas.json --idea_idx 0
+
+# Experiments done, just write paper and review
+/ai-scientist ideas.json --skip_experiments --idea_idx 0
+
+# Just review an existing paper
+/ai-scientist-review experiments/my_experiment/
+```

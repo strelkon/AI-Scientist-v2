@@ -1,89 +1,142 @@
 ---
 name: ai-scientist-writeup
-description: Generate a scientific paper from completed AI Scientist v2 experiment results
+description: Generate a scientific paper from completed AI Scientist v2 experiments — uses Claude Code directly, no API keys required
 disable-model-invocation: true
-allowed-tools: Bash, Read, Glob, Grep
-argument-hint: <experiment-dir> [--writeup-type normal|icbinb] [--model_writeup MODEL] [--num_cite_rounds N]
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
+argument-hint: <experiment-dir> [--writeup-type normal|icbinb]
 ---
 
-# AI Scientist v2 — Paper Writeup
+# AI Scientist v2 — Paper Writeup (Claude Code Native)
 
-You are running the paper generation stage of AI Scientist v2. This takes completed experiment results and produces a full scientific manuscript in LaTeX/PDF format.
+You are a scientific paper writer generating a complete LaTeX manuscript from experiment results. This skill runs entirely within Claude Code — **no API keys required**.
 
-## Prerequisites
+## Arguments
 
-1. **Completed experiments** — An experiment directory with results (from `/ai-scientist-experiment` or `/ai-scientist`).
-2. **API keys** — `OPENAI_API_KEY` for the writeup and citation models.
-3. **LaTeX** — `pdflatex` and `bibtex` must be installed.
-4. **Semantic Scholar** — `S2_API_KEY` recommended for citation gathering.
+- **Positional arg 1** (`$ARGUMENTS` first word): Path to experiment directory (e.g., `experiments/2025-01-01_my_idea_attempt_0`)
+- `--writeup-type TYPE`: `icbinb` (4-page workshop, default) or `normal` (8-page conference)
 
-## Usage
+## Step 1: Load Experiment Data
 
-Parse `$ARGUMENTS`:
+Read these files from the experiment directory:
 
-- **Positional arg 1** (`$0`): Path to experiment directory (e.g., `experiments/2025-01-01_my_idea_attempt_0`)
-- `--writeup-type TYPE`: `normal` (8-page ICML) or `icbinb` (4-page workshop). Default: `icbinb`
-- `--model_writeup MODEL`: Model for paper writing (default: o1-preview-2024-09-12)
-- `--model_writeup_small MODEL`: Secondary model (default: gpt-4o-2024-05-13)
-- `--model_citation MODEL`: Model for citations (default: gpt-4o-2024-11-20)
-- `--num_cite_rounds N`: Citation search rounds (default: 20)
+1. **Research idea**: `idea.md` or `research_idea.md`
+2. **Idea JSON**: `idea.json`
+3. **Experiment summaries** (in `logs/0-run/`):
+   - `baseline_summary.json`
+   - `research_summary.json`
+   - `ablation_summary.json`
+4. **Figures**: List all `.png` files in `figures/`
+5. **Plot aggregator script**: `auto_plot_aggregator.py` (if exists)
 
-## Execution
+Read all of these files. The experiment summaries are critical — they contain the full results.
 
-This stage involves two sub-steps run sequentially:
-
-### Step 1: Gather Citations
-```python
-from ai_scientist.perform_icbinb_writeup import gather_citations
-gather_citations(experiment_dir, num_cite_rounds=20, small_model="gpt-4o-2024-11-20")
-```
-
-### Step 2: Generate Paper
-```python
-# For ICBINB (4-page):
-from ai_scientist.perform_icbinb_writeup import perform_writeup
-perform_writeup(base_folder=experiment_dir, small_model=..., big_model=..., page_limit=4, citations_text=...)
-
-# For normal (8-page):
-from ai_scientist.perform_writeup import perform_writeup
-perform_writeup(base_folder=experiment_dir, small_model=..., big_model=..., page_limit=8, citations_text=...)
-```
-
-Run via a Python script:
+## Step 2: Set Up LaTeX Workspace
 
 ```bash
-cd /home/user/AI-Scientist-v2
-export AI_SCIENTIST_ROOT=/home/user/AI-Scientist-v2
+cd <experiment-dir>
 
-python -c "
-import sys, json
-from ai_scientist.perform_icbinb_writeup import gather_citations, perform_writeup
-
-experiment_dir = '$0'
-citations_text = gather_citations(experiment_dir, num_cite_rounds=20, small_model='gpt-4o-2024-11-20')
-
-for attempt in range(3):
-    print(f'Writeup attempt {attempt+1}/3')
-    success = perform_writeup(
-        base_folder=experiment_dir,
-        small_model='gpt-4o-2024-05-13',
-        big_model='o1-preview-2024-09-12',
-        page_limit=4,
-        citations_text=citations_text,
-    )
-    if success:
-        print('Writeup successful!')
-        break
-else:
-    print('Writeup failed after 3 attempts')
-"
+# Choose template based on writeup type
+if [ "$WRITEUP_TYPE" = "normal" ]; then
+  cp -r /home/user/AI-Scientist-v2/ai_scientist/blank_icml_latex latex
+else
+  cp -r /home/user/AI-Scientist-v2/ai_scientist/blank_icbinb_latex latex
+fi
 ```
 
-This is a long-running process. Run with `run_in_background: true`.
+Read the template file at `<experiment-dir>/latex/template.tex`.
 
-## Output
+## Step 3: Gather Citations
 
-- `{experiment_dir}/*.pdf` — The generated paper
-- `{experiment_dir}/token_tracker.json` — Updated cost tracking
+Use **WebSearch** to find relevant papers for citation. For each major claim or comparison in the experiment results:
 
-After completion, report the PDF path and any errors.
+1. Search for the most relevant papers (at least 10-15 total citations)
+2. For each paper found, create a BibTeX entry
+3. Add all citations to the `references.bib` filecontents block in `template.tex`
+
+BibTeX entries should follow this format:
+```bibtex
+@article{authorYYYYkeyword,
+  title={Paper Title},
+  author={Last, First and Last2, First2},
+  journal={Venue},
+  year={YYYY}
+}
+```
+
+## Step 4: Generate Paper Content
+
+Replace the placeholder markers (`%%%%%%%%%SECTION%%%%%%%%%`) in `template.tex` with real content. The template has these sections:
+
+### For ICBINB (4-page, single-column):
+- **Title** and **Abstract** (from the idea)
+- **Introduction**: Motivate the research question, state contributions
+- **Related Work**: Position against existing literature (use citations from Step 3)
+- **Background**: Necessary technical background
+- **Method**: Describe the approach in detail
+- **Experimental Setup**: Datasets, metrics, baselines, hyperparameters
+- **Experiments**: Present results with figures and tables. Reference ALL relevant figures from `figures/`
+- **Conclusion**: Summarize findings, limitations, future work
+- **Appendix**: Additional results, ablations, extra figures
+
+### For Normal (8-page, double-column):
+Same sections plus:
+- **Impact Statement**: Broader impact of the work
+
+### Writing Guidelines:
+
+1. **Figures**: Use `\includegraphics{filename.png}` (the template sets `\graphicspath{{../figures/}}`)
+2. **Page limits**: 4 pages for ICBINB (single-column), 8 pages for normal (double-column), excluding references and appendix
+3. **Accuracy**: Only report results that appear in the experiment summaries. Never hallucinate metrics.
+4. **All results**: Include ALL experiment results truthfully — negative results are valuable, especially for ICBINB
+5. **Figures in main text**: For ICBINB, keep at most 4 figures in main text; move rest to appendix
+6. **No itemize/enumerate abuse**: Use flowing prose, minimize bullet lists
+7. **Citations**: Use `\citep{}` for parenthetical and `\citet{}` for textual citations
+
+### LaTeX Quality:
+- Escape special characters: `%`, `_`, `&`, `#`, `$`
+- Use `\textbf{}` and `\textit{}` for emphasis
+- Tables should use `\begin{table}[h]` with `\centering`
+- Figures should use `\begin{figure}[h]` or `\begin{figure*}` for full-width
+
+## Step 5: Write the LaTeX File
+
+Use the Edit tool to replace the template content section by section. Work through each `%%%%%%%%%MARKER%%%%%%%%%` pair, replacing the placeholder text between them with your generated content.
+
+## Step 6: Compile the Paper
+
+```bash
+cd <experiment-dir>/latex
+pdflatex -interaction=nonstopmode template.tex
+bibtex template
+pdflatex -interaction=nonstopmode template.tex
+pdflatex -interaction=nonstopmode template.tex
+```
+
+## Step 7: Review & Fix Compilation
+
+After compilation:
+
+1. Check for LaTeX errors in the output
+2. Run `chktex template.tex` to find common issues
+3. Check page count: `pdftotext template.pdf - | grep -c "."` or examine the PDF
+4. Fix any issues and recompile (up to 3 attempts)
+
+Common fixes:
+- `</end` → `\end` (common LLM mistake)
+- Unescaped `%` or `_` in text
+- Missing `\usepackage` declarations
+- Overfull hbox warnings (rephrase text or adjust figure sizes)
+
+## Step 8: Finalize
+
+```bash
+cd <experiment-dir>
+FOLDER_NAME=$(basename $(pwd))
+cp latex/template.pdf "${FOLDER_NAME}.pdf"
+```
+
+Report to the user:
+- Path to the generated PDF
+- Page count
+- Any compilation warnings
+- Suggestion to run `/ai-scientist-review <experiment-dir>` for peer review
