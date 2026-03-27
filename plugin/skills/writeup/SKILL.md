@@ -12,9 +12,7 @@ You are a scientific paper writer generating a complete LaTeX manuscript from ex
 
 ## Environment
 
-```bash
-echo "AI_SCIENTIST_ROOT: ${AI_SCIENTIST_ROOT:?'ERROR: Set AI_SCIENTIST_ROOT to the AI-Scientist-v2 repo path'}"
-```
+- **PROJECT_DIR**: `${user_config.PROJECT_DIR}` — path to the AI-Scientist-v2 repository.
 
 ## Arguments
 
@@ -43,9 +41,9 @@ cd <experiment-dir>
 
 # Choose template based on writeup type
 if [ "$WRITEUP_TYPE" = "normal" ]; then
-  cp -r ${AI_SCIENTIST_ROOT}/ai_scientist/blank_icml_latex latex
+  cp -r ${user_config.PROJECT_DIR}/ai_scientist/blank_icml_latex latex
 else
-  cp -r ${AI_SCIENTIST_ROOT}/ai_scientist/blank_icbinb_latex latex
+  cp -r ${user_config.PROJECT_DIR}/ai_scientist/blank_icbinb_latex latex
 fi
 ```
 
@@ -56,8 +54,8 @@ Read the template file at `<experiment-dir>/latex/template.tex`.
 Use **Semantic Scholar** to find relevant papers for citation:
 
 ```bash
-cd ${AI_SCIENTIST_ROOT}
-python -c "
+cd ${user_config.PROJECT_DIR}
+S2_API_KEY="${user_config.S2_API_KEY}" python -c "
 from ai_scientist.tools.semantic_scholar import search_for_papers
 import json
 

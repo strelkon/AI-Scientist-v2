@@ -12,13 +12,9 @@ You are an experienced AI researcher generating high-impact research ideas. This
 
 ## Environment
 
-- **AI_SCIENTIST_ROOT**: `${AI_SCIENTIST_ROOT}` — path to the AI-Scientist-v2 repository.
-- **S2_API_KEY**: Recommended for Semantic Scholar API access. Verify:
-  ```bash
-  echo "AI_SCIENTIST_ROOT: ${AI_SCIENTIST_ROOT:?'ERROR: Set AI_SCIENTIST_ROOT to the AI-Scientist-v2 repo path'}"
-  echo "S2_API_KEY: ${S2_API_KEY:+set}"
-  ```
-  If `S2_API_KEY` is not set, warn the user and fall back to WebSearch.
+- **PROJECT_DIR**: `${user_config.PROJECT_DIR}` — path to the AI-Scientist-v2 repository.
+- **S2_API_KEY**: `${user_config.S2_API_KEY}` — recommended for Semantic Scholar API access.
+  If not configured, warn the user and fall back to WebSearch.
 
 ## Arguments
 
@@ -36,7 +32,7 @@ Read the workshop topic markdown file. It should contain:
 - TL;DR
 - Abstract describing the research area
 
-If the user provides a topic description but no file exists, create one at `${AI_SCIENTIST_ROOT}/ai_scientist/ideas/<topic_name>.md` with this structure:
+If the user provides a topic description but no file exists, create one at `${user_config.PROJECT_DIR}/ai_scientist/ideas/<topic_name>.md` with this structure:
 
 ```markdown
 # Title: <Workshop/Topic Title>
@@ -60,8 +56,8 @@ For each idea (up to max-num-generations), follow this process:
 Use **Semantic Scholar** to find relevant papers. Run searches via the existing Python tool:
 
 ```bash
-cd ${AI_SCIENTIST_ROOT}
-python -c "
+cd ${user_config.PROJECT_DIR}
+S2_API_KEY="${user_config.S2_API_KEY}" python -c "
 from ai_scientist.tools.semantic_scholar import SemanticScholarSearchTool
 tool = SemanticScholarSearchTool(max_results=10)
 result = tool.use_tool('YOUR SEARCH QUERY HERE')

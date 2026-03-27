@@ -20,14 +20,16 @@
   ],
   "userConfig": {
     "S2_API_KEY": {
-      "description": "Semantic Scholar API key for literature search (recommended). Get one at https://www.semanticscholar.org/product/api",
-      "required": false,
-      "env": "S2_API_KEY"
+      "title": "Semantic Scholar API Key",
+      "description": "API key for literature search (recommended). Get one at https://www.semanticscholar.org/product/api",
+      "type": "string",
+      "required": false
     },
     "PROJECT_DIR": {
+      "title": "AI-Scientist-v2 Repository Path",
       "description": "Path to the AI-Scientist-v2 repository checkout (with ai_scientist/ and bfts_config.yaml)",
-      "required": true,
-      "env": "AI_SCIENTIST_ROOT"
+      "type": "directory",
+      "required": true
     }
   }
 }

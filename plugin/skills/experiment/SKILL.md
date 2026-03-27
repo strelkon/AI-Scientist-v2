@@ -13,9 +13,7 @@ You are an expert ML researcher running experiments through a structured 4-stage
 
 ## Environment
 
-```bash
-echo "AI_SCIENTIST_ROOT: ${AI_SCIENTIST_ROOT:?'ERROR: Set AI_SCIENTIST_ROOT to the AI-Scientist-v2 repo path'}"
-```
+- **PROJECT_DIR**: `${user_config.PROJECT_DIR}` — path to the AI-Scientist-v2 repository.
 
 ## Arguments
 
@@ -29,7 +27,7 @@ echo "AI_SCIENTIST_ROOT: ${AI_SCIENTIST_ROOT:?'ERROR: Set AI_SCIENTIST_ROOT to t
 ### 1a. Load the Research Idea
 
 ```bash
-cd ${AI_SCIENTIST_ROOT}
+cd ${user_config.PROJECT_DIR}
 ```
 
 Read the ideas JSON file and extract the idea at the specified index. Read the idea's fields:
@@ -42,7 +40,7 @@ Read the ideas JSON file and extract the idea at the specified index. Read the i
 ```bash
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 IDEA_NAME="<idea Name field>"
-EXPERIMENT_DIR="${AI_SCIENTIST_ROOT}/experiments/${DATE}_${IDEA_NAME}_attempt_0"
+EXPERIMENT_DIR="${user_config.PROJECT_DIR}/experiments/${DATE}_${IDEA_NAME}_attempt_0"
 mkdir -p "$EXPERIMENT_DIR/logs/0-run"
 mkdir -p "$EXPERIMENT_DIR/figures"
 ```

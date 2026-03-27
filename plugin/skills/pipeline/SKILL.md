@@ -13,9 +13,11 @@ Orchestrate the complete AI Scientist v2 research pipeline. **All stages run nat
 
 ## Environment
 
+- **PROJECT_DIR**: `${user_config.PROJECT_DIR}` — path to the AI-Scientist-v2 repository.
+- **S2_API_KEY**: `${user_config.S2_API_KEY}` — Semantic Scholar API key (optional).
+
+Before starting, verify system dependencies:
 ```bash
-echo "AI_SCIENTIST_ROOT: ${AI_SCIENTIST_ROOT:?'ERROR: Set AI_SCIENTIST_ROOT to the AI-Scientist-v2 repo path'}"
-echo "S2_API_KEY: ${S2_API_KEY:+set}"
 python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, GPUs: {torch.cuda.device_count()}')" 2>/dev/null || echo "PyTorch not available"
 which pdflatex 2>/dev/null && echo "pdflatex: available" || echo "pdflatex: not found (needed for writeup)"
 ```
