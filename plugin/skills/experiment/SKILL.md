@@ -1,7 +1,7 @@
 ---
 name: experiment
 description: Run AI Scientist v2 experiments using Claude Code as the code generator — no external API keys required. Implements the 4-stage BFTS workflow natively.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 argument-hint: <ideas-json-path> [--idea_idx N] [--load_code] [--add_dataset_ref]
 effort: max

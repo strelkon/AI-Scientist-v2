@@ -1,7 +1,7 @@
 ---
 name: pipeline
 description: Run the full AI Scientist v2 pipeline — autonomous scientific research from ideation through review. No external API keys required.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <ideas-json-or-topic-md> [--idea_idx N] [--writeup-type normal|icbinb] [--skip_writeup] [--skip_review] [--skip_experiments]
 effort: max

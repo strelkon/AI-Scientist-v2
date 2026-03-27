@@ -1,7 +1,7 @@
 ---
 name: review
 description: Perform AI peer review of a scientific paper — uses Claude Code directly, no API keys required
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Glob, Grep
 argument-hint: <experiment-dir>
 ---

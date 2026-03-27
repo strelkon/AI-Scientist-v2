@@ -1,7 +1,7 @@
 ---
 name: ideate
 description: Generate research ideas for AI Scientist v2 — uses Claude Code directly with Semantic Scholar for literature search
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <workshop-topic-file.md> [--max-num-generations N] [--num-reflections N]
 ---

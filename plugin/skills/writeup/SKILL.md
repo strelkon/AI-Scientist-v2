@@ -1,7 +1,7 @@
 ---
 name: writeup
 description: Generate a scientific paper from completed AI Scientist v2 experiments — uses Claude Code directly with Semantic Scholar for citations
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <experiment-dir> [--writeup-type normal|icbinb]
 ---
