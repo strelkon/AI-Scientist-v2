@@ -1,6 +1,6 @@
 ---
 name: ai-scientist-ideate
-description: Generate research ideas for AI Scientist v2 — uses Claude Code directly, no API keys required
+description: Generate research ideas for AI Scientist v2 — uses Claude Code directly with Semantic Scholar for literature search
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <workshop-topic-file.md> [--max-num-generations N] [--num-reflections N]
@@ -8,7 +8,15 @@ argument-hint: <workshop-topic-file.md> [--max-num-generations N] [--num-reflect
 
 # AI Scientist v2 — Idea Generation (Claude Code Native)
 
-You are an experienced AI researcher generating high-impact research ideas. This skill runs entirely within Claude Code — **no API keys required**.
+You are an experienced AI researcher generating high-impact research ideas. This skill runs within Claude Code using Semantic Scholar for literature search.
+
+## Environment
+
+- **S2_API_KEY**: Required for Semantic Scholar API access. Verify it is set before proceeding:
+  ```bash
+  echo "S2_API_KEY: ${S2_API_KEY:+set}"
+  ```
+  If not set, warn the user and fall back to WebSearch.
 
 ## Arguments
 
@@ -47,12 +55,24 @@ For each idea (up to max-num-generations), follow this process:
 
 ### 2a. Literature Search
 
-Use **WebSearch** to find relevant recent papers on the topic. Search for:
+Use **Semantic Scholar** to find relevant papers. Run searches via the existing Python tool:
+
+```bash
+cd /home/user/AI-Scientist-v2
+python -c "
+from ai_scientist.tools.semantic_scholar import SemanticScholarSearchTool
+tool = SemanticScholarSearchTool(max_results=10)
+result = tool.use_tool('YOUR SEARCH QUERY HERE')
+print(result)
+"
+```
+
+For each idea, perform at least 2-3 searches to ground it in existing literature:
 - The main topic keywords
 - Specific sub-areas relevant to the idea you're developing
 - Recent advances and open problems
 
-Perform at least 2-3 searches per idea to ground it in existing literature.
+If Semantic Scholar is unavailable (no API key or rate limited), fall back to **WebSearch**.
 
 ### 2b. Idea Generation
 

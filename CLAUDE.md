@@ -16,11 +16,11 @@ This project includes Claude Code skills for orchestrating the pipeline. Most st
 
 ### API Key Requirements
 
-- **No keys needed** for: ideation, writeup, and review (Claude Code handles LLM tasks directly)
+- **`S2_API_KEY`** — For Semantic Scholar literature search (used by ideation and writeup skills)
+- **No other keys needed** for: ideation, writeup, and review (Claude Code handles LLM tasks directly)
 - **Keys needed only for experiments** (parallel BFTS tree search):
   - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME` — For Bedrock (experiment coding)
   - `OPENAI_API_KEY` — For feedback model during experiments
-- **Optional**: `S2_API_KEY` — For Semantic Scholar (ideation uses web search as fallback)
 
 ### Typical Workflow
 

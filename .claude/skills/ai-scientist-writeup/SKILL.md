@@ -1,6 +1,6 @@
 ---
 name: ai-scientist-writeup
-description: Generate a scientific paper from completed AI Scientist v2 experiments — uses Claude Code directly, no API keys required
+description: Generate a scientific paper from completed AI Scientist v2 experiments — uses Claude Code directly with Semantic Scholar for citations
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, WebSearch, WebFetch
 argument-hint: <experiment-dir> [--writeup-type normal|icbinb]
@@ -8,7 +8,7 @@ argument-hint: <experiment-dir> [--writeup-type normal|icbinb]
 
 # AI Scientist v2 — Paper Writeup (Claude Code Native)
 
-You are a scientific paper writer generating a complete LaTeX manuscript from experiment results. This skill runs entirely within Claude Code — **no API keys required**.
+You are a scientific paper writer generating a complete LaTeX manuscript from experiment results. This skill runs within Claude Code using Semantic Scholar for citation gathering.
 
 ## Arguments
 
@@ -47,11 +47,38 @@ Read the template file at `<experiment-dir>/latex/template.tex`.
 
 ## Step 3: Gather Citations
 
-Use **WebSearch** to find relevant papers for citation. For each major claim or comparison in the experiment results:
+Use **Semantic Scholar** to find relevant papers for citation. For each major topic, claim, or comparison in the experiment results, search for papers:
 
-1. Search for the most relevant papers (at least 10-15 total citations)
-2. For each paper found, create a BibTeX entry
-3. Add all citations to the `references.bib` filecontents block in `template.tex`
+```bash
+cd /home/user/AI-Scientist-v2
+python -c "
+from ai_scientist.tools.semantic_scholar import search_for_papers
+import json
+
+papers = search_for_papers('YOUR SEARCH QUERY', result_limit=5)
+if papers:
+    for p in papers:
+        authors = ', '.join([a.get('name','') for a in p.get('authors',[])])
+        print(f\"Title: {p.get('title')}\")
+        print(f\"Authors: {authors}\")
+        print(f\"Venue: {p.get('venue')}, Year: {p.get('year')}\")
+        print(f\"Citations: {p.get('citationCount')}\")
+        cite = p.get('citationStyles', {}).get('bibtex', '')
+        if cite:
+            print(f'BibTeX: {cite}')
+        print('---')
+"
+```
+
+Perform at least 5-8 separate searches covering different aspects of the paper (method, baselines, datasets, related work, etc.) to gather 10-15+ citations.
+
+For each paper found:
+1. Use the BibTeX from Semantic Scholar's `citationStyles.bibtex` field if available
+2. Otherwise, create a BibTeX entry manually
+3. Clean citation keys: lowercase, no accents/special chars, format `authorYYYYkeyword`
+4. Add all citations to the `references.bib` filecontents block in `template.tex`
+
+If Semantic Scholar is unavailable, fall back to **WebSearch**.
 
 BibTeX entries should follow this format:
 ```bibtex
